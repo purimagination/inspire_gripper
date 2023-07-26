@@ -1,6 +1,45 @@
 #!/usr/bin/env python3
 
-class inspire_gripper():
+from serial import Serial  # 要装pyserial
+import serial.tools.list_ports
+import atexit
+
+#继承串口类
+class MySerial(Serial):
+    # 继承串口类，实现了可以在初始化时不用配置任何信息，通过新增加的comset函数进行配置，然后通过connect进行鲁棒的连接。
+    # 初始化和comset可以都不指定端口号，而是在connect时再指定。
+    # 配置串口参数（可以不包括端口号）
+    def ComSet(self, baudrate, bytesize, parity, stopbits, timeout,port=None):
+        d={'baudrate': baudrate, 'bytesize': bytesize, 'parity':parity, 'stopbits':stopbits, 'timeout': timeout}
+        self.apply_settings(d)
+        self.port = port
+    # 选择端口号并尝试连接
+    def Connect(self,rs_port=None):
+        if self.is_open:
+            print(f'已成功连接串口{self.port}')
+            return
+        if rs_port is None:
+            if self.port is not None:
+                rs_port = self.port
+            else: raise Exception('缺少串口号，请检查串口配置')
+        # 没连接到串口则一直连接
+        while True:
+            port_list = list(serial.tools.list_ports.comports())
+            if len(port_list) == 0: exit("没有可用串口")
+            else:
+                port_list = [port.device for port in port_list]
+                port_list = ";".join(list(map(str,port_list)))  # 将字符串列表转换为一整个字符串
+                if rs_port in port_list:  # 判断选用的端口是否在其中
+                    self.port = rs_port
+                    self.open() # 开启串口
+                    if self.is_open:
+                        print(f"成功连接串口{rs_port}")
+                        return
+                    else: print(f"已找到目标端口号{rs_port}，但无法连接")
+                else: print("未找到目标端口号{}。找到的所有端口为：{}".format(rs_port,port_list))
+
+class InspireGripper():
+    
     def __init__(self) -> None:
         pass
 
@@ -29,9 +68,6 @@ class inspire_gripper():
         # 如vid为6790，PID为29987，则写为'6790_29987'；
         # find=true时查找完直接函数直接返回；
         if not hasattr(cls.ToSerial,f'{port_vpid}'):
-            from serial import Serial  # 要装pyserial
-            import serial.tools.list_ports
-            import atexit
             if find is True:
                 port_list = list(serial.tools.list_ports.comports())
                 device_list = [port.device for port in port_list]
@@ -44,39 +80,6 @@ class inspire_gripper():
                 print('设备的descriptio为：',description_list)
                 print(type(pid_list[0]))
                 return
-            #继承串口类
-            class MySerial(Serial):
-                # 继承串口类，实现了可以在初始化时不用配置任何信息，通过新增加的comset函数进行配置，然后通过connect进行鲁棒的连接。
-                # 初始化和comset可以都不指定端口号，而是在connect时再指定。
-                # 配置串口参数（可以不包括端口号）
-                def ComSet(self, baudrate, bytesize, parity, stopbits, timeout,port=None):
-                    d={'baudrate': baudrate, 'bytesize': bytesize, 'parity':parity, 'stopbits':stopbits, 'timeout': timeout}
-                    self.apply_settings(d)
-                    self.port = port
-                # 选择端口号并尝试连接
-                def Connect(self,rs_port=None):
-                    if self.is_open:
-                        print(f'已成功连接串口{self.port}')
-                        return
-                    if rs_port is None:
-                        if self.port is not None:
-                            rs_port = self.port
-                        else: raise Exception('缺少串口号，请检查串口配置')
-                    # 没连接到串口则一直连接
-                    while True:
-                        port_list = list(serial.tools.list_ports.comports())
-                        if len(port_list) == 0: exit("没有可用串口")
-                        else:
-                            port_list = [port.device for port in port_list]
-                            port_list = ";".join(list(map(str,port_list)))  # 将字符串列表转换为一整个字符串
-                            if rs_port in port_list:  # 判断选用的端口是否在其中
-                                self.port = rs_port
-                                self.open() # 开启串口
-                                if self.is_open:
-                                    print(f"成功连接串口{rs_port}")
-                                    return
-                                else: print(f"已找到目标端口号{rs_port}，但无法连接")
-                            else: print("未找到目标端口号{}。找到的所有端口为：{}".format(rs_port,port_list))
             # 串口初始化与连接
             if '_' in port_vpid:
                 vid, pid = port_vpid.split('_')
@@ -146,5 +149,5 @@ class inspire_gripper():
         # 提示：根据因时的相关协议说明，两次控制指令发送时间间隔最好至少5ms
 
 if __name__ == '__main__':
-    a = inspire_gripper()
-    a.two_finger_gripper(pp=0)
+    a = InspireGripper()
+    a.two_finger_gripper(0)
