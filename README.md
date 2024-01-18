@@ -1,4 +1,5 @@
 # inspire_gripper
+This is a ROS 2 package for the [inspire two-finger paraller gripper](https://www.inspire-robots.com/product/ddjs/).
 
 ## Dependencies
 ```sh
@@ -17,7 +18,7 @@ sudo chmod a+rw /dev/ttyUSB*
 ```sh
 # cd to your ROS 2 Workspace
 cd colcon_ws/src
-git clone https://github.com/AIR-HCI-Demonstration-2023/inspire_gripper.git
+git clone https://github.com/purimagination/inspire_gripper.git
 cd ..
 colcon build
 source install setup.bash
